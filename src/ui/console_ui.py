@@ -5,7 +5,8 @@ import random
 from colorama import init, Fore, Back, Style
 from ..game.card import Card, Color, CardType
 from ..game.player import Player
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Dict, Optional
+from datetime import datetime
 
 if TYPE_CHECKING:
     from ..game.game_manager import GameManager
@@ -20,7 +21,7 @@ class ConsoleUI:
             Color.YELLOW: Fore.YELLOW,
             Color.BLACK: Fore.WHITE
         }
-        self.animation_enabled = True
+        self.animation_enabled = False
         self.animation_speed = 0.05
 
     def _clear_screen(self):
@@ -149,8 +150,9 @@ class ConsoleUI:
         print("╚════════════════════════════════╝")
 
     def show_message(self, message: str, error: bool = False):
-        color = Fore.RED if error else Fore.GREEN
-        print(f"\n{color}{message}{Style.RESET_ALL}")
+        """Affiche un message à l'utilisateur"""
+        color = '\033[91m' if error else '\033[92m'  # Rouge pour erreur, vert pour succès
+        print(f"{color}{message}\033[0m")
 
     def show_saves(self, saves: list):
         print(f"\n{Fore.CYAN}Sauvegardes disponibles :{Style.RESET_ALL}")
@@ -191,8 +193,7 @@ class ConsoleUI:
             
         elif command == "!quit":
             if self._confirm_quit():
-                return -4  # Code spécial pour quitter
-            return -3  # Continue le tour
+                return -4 
             
         print(f"{Fore.RED}Commande non reconnue !{Style.RESET_ALL}")
         return -3  # Continue le tour
@@ -367,3 +368,34 @@ class ConsoleUI:
             print(f"{Fore.GREEN}{message}{Style.RESET_ALL}")
             print(f"{Fore.YELLOW}======================{Style.RESET_ALL}\n")
             time.sleep(2)  # Pause pour que le joueur puisse lire le message
+
+    def display_save_list(self, saves: List[Dict[str, str]]) -> Optional[str]:
+        """Affiche la liste des sauvegardes et permet à l'utilisateur d'en sélectionner une"""
+        if not saves:
+            self.show_message("Aucune sauvegarde disponible")
+            return None
+
+        print("\nSauvegardes disponibles :")
+        print("╔════════════════════════════════╗")
+        for i, save in enumerate(saves, 1):
+            date = datetime.fromisoformat(save['date']).strftime("%d/%m/%Y %H:%M")
+            print(f"║ {i}. {save['filename']} - {date}")
+        print("╚════════════════════════════════╝")
+
+        while True:
+            try:
+                choice = input("\nChoisissez une sauvegarde (0 pour annuler) : ")
+                if not choice.strip():
+                    return None
+                    
+                choice = int(choice)
+                if choice == 0:
+                    return None
+                if 1 <= choice <= len(saves):
+                    # Retourner uniquement le nom du fichier
+                    return saves[choice - 1]['filename']
+                    
+            except ValueError:
+                print("Veuillez entrer un numéro valide")
+            
+        return None

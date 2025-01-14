@@ -5,11 +5,10 @@ from src.game.save_manager import SaveManager
 def main():
     menu = Menu()
     save_manager = SaveManager()
-    
-    # Vérifier s'il existe des sauvegardes
+
     saves = save_manager.list_saves()
     if saves and menu.ask_load_game():
-        game = GameManager("facile")  # La difficulté sera écrasée au chargement
+        game = GameManager("facile") 
         save_file = menu.ui.choose_save_file(saves)
         if save_file and game.load_game(save_file):
             menu.ui.show_message("Partie chargée avec succès !")

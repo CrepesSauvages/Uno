@@ -154,7 +154,7 @@ class GameManager:
             
             if choice == -4:  # Quitter
                 self.quit_game = True
-                return
+                break
                 
             if choice == -2:  # Sauvegarder
                 if self.save_current_game():
@@ -175,7 +175,7 @@ class GameManager:
             else:
                 card_to_play = player.hand[choice]
                 self._play_card(player, card_to_play)
-                break
+                break 
 
     def calculate_round_score(self, winner: Player) -> int:
         score = 0
@@ -256,22 +256,28 @@ class GameManager:
                 'game_stats': self.game_stats
             }
             
-            self.save_manager.save_game(game_state)
-            return True
+            return self.save_manager.save_game(game_state)
         except Exception as e:
             print(f"Erreur lors de la sauvegarde : {e}")
             return False
 
-    def load_game(self, save_file: str) -> bool:
+    def load_game(self, save_file) -> bool:
         try:
+            # Conversion en string si ce n'est pas déjà le cas
+            save_file = str(save_file)
+            
+            # Chargement du fichier de sauvegarde
             game_state = self.save_manager.load_game(save_file)
+            if game_state is None:
+                print("Échec du chargement de la sauvegarde")
+                return False
             
             # Restaurer l'état du jeu
-            self.difficulty = game_state['difficulty']
-            self.current_player_index = game_state['current_player']
-            self.direction = game_state['direction']
-            self.scores = game_state['scores']
-            self.game_stats = game_state['stats']
+            self.difficulty = game_state.get('difficulty', 'facile')
+            self.current_player_index = game_state.get('current_player', 0)
+            self.direction = game_state.get('direction', 1)
+            self.scores = game_state.get('scores', {})
+            self.game_stats = game_state.get('stats', {})
             
             # Recréer les joueurs et leurs mains
             self.players = []
@@ -311,4 +317,40 @@ class GameManager:
             return True
         except Exception as e:
             print(f"Erreur lors du chargement : {e}")
+            return False
+
+    def load_saved_game(self) -> bool:
+        """Charge une partie sauvegardée"""
+        saves = self.save_manager.list_saves()
+        if not saves:
+            self.ui.show_message("Aucune sauvegarde disponible", error=True)
+            return False
+
+        selected_save = self.ui.display_save_list(saves)
+        if not selected_save:
+            return False
+
+        # Assurons-nous que selected_save est bien le nom du fichier
+        if isinstance(selected_save, dict):
+            selected_save = selected_save.get('filename')
+        elif isinstance(selected_save, str):
+            # Si c'est une chaîne qui ressemble à un dictionnaire, extrayons le nom du fichier
+            if selected_save.startswith('{'):
+                try:
+                    import ast
+                    save_dict = ast.literal_eval(selected_save)
+                    selected_save = save_dict.get('filename')
+                except:
+                    pass
+
+        # Vérification finale
+        if not isinstance(selected_save, str) or not selected_save.endswith('.json.gz'):
+            self.ui.show_message("Format de sauvegarde invalide", error=True)
+            return False
+
+        if self.load_game(selected_save):
+            self.ui.show_message("Partie chargée avec succès !")
+            return True
+        else:
+            self.ui.show_message("Échec du chargement de la sauvegarde", error=True)
             return False
