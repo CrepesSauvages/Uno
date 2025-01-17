@@ -15,3 +15,8 @@ Lancez le jeu avec :
 ```bash
 python main.py
 ```
+## Fonctionnalités
+- Interface console colorée avec animations
+- Système d'achievements
+- Sauvegarde/Chargement de partie
+- IA avec différents niveaux de difficulté
